@@ -139,14 +139,14 @@ export default function LoginPage() {
                 <p className="text-sm text-red-500">{errors.password}</p>
               )}
             </div>
-            {responseData && (
+            {/* {responseData && (
               <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                 <h3 className="font-semibold mb-2">Response Data:</h3>
                 <pre className="text-sm overflow-auto">
                   {JSON.stringify(responseData, null, 2)}
                 </pre>
               </div>
-            )}
+            )} */}
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
             <Button

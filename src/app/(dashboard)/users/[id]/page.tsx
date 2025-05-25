@@ -40,6 +40,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { PencilIcon, TrashIcon } from "lucide-react";
+import Link from "next/link";
+import { UserIcon } from "lucide-react";
+import { EyeIcon } from "lucide-react";
+import { StarIcon } from "lucide-react";
+import { BookOpenIcon } from "lucide-react";
+
+interface Course {
+  courseId: string;
+  title: string;
+  description: string | null;
+  overview: string | null;
+  thumbnail: string | null;
+  approved: "PENDING" | "APPROVED" | "REJECTED";
+  isBestSeller: boolean;
+  isRecommended: boolean;
+}
 
 interface UserDetail {
   userId: string;
@@ -66,6 +83,39 @@ interface UserDetail {
   resetPasswordTokenExp?: string | null;
   verificationEmailToken?: string;
   verificationEmailTokenExp?: string;
+  instructor?: {
+    experience: string;
+    bio: string;
+    averageRating: number;
+    courses: {
+      courseId: string;
+      title: string;
+      description: string;
+      thumbnail: string;
+      approved: "PENDING" | "APPROVED" | "REJECTED";
+    }[];
+  };
+  enrollments: {
+    courseEnrollmentId: string;
+    enrolledAt: string;
+    course: {
+      courseId: string;
+      title: string;
+      description: string;
+      thumbnail: string;
+    };
+  }[];
+  reviews: {
+    reviewId: string;
+    rating: number;
+    comment: string;
+    createdAt: string;
+    course: {
+      courseId: string;
+      title: string;
+      thumbnail: string;
+    };
+  }[];
 }
 
 interface ApiResponse {
@@ -186,478 +236,497 @@ export default function UserDetailPage() {
   }
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="grid gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Thông tin người dùng</CardTitle>
-            <div className="flex gap-2">
-              <Dialog
-                open={updateDialogOpen}
-                onOpenChange={setUpdateDialogOpen}
-              >
-                <DialogTrigger asChild>
-                  <Button variant="outline">Cập nhật</Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
-                  <DialogHeader>
-                    <DialogTitle>Cập nhật thông tin</DialogTitle>
-                    <DialogDescription>
-                      Cập nhật thông tin người dùng. Nhấn lưu khi hoàn tất.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="email" className="text-right">
-                        Email
-                      </Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        className="col-span-3"
-                        value={formData.email}
-                        onChange={(e) =>
-                          setFormData({ ...formData, email: e.target.value })
-                        }
-                        required
-                      />
+    <div className="container mx-auto py-10">
+      <div className="flex flex-col gap-6">
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+              Chi tiết người dùng
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Xem và quản lý thông tin chi tiết người dùng
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <PencilIcon className="h-4 w-4" />
+                  Cập nhật trạng thái
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Cập nhật trạng thái người dùng</DialogTitle>
+                  <DialogDescription>
+                    Thay đổi trạng thái xác thực của người dùng
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="status">Trạng thái</Label>
+                    <Select
+                      value={formData.isEmailVerified ? "true" : "false"}
+                      onValueChange={(value) =>
+                        setFormData({
+                          ...formData,
+                          isEmailVerified: value === "true",
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn trạng thái" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="true">Đã xác thực</SelectItem>
+                        <SelectItem value="false">Chưa xác thực</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button onClick={handleUpdate}>Cập nhật</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" className="gap-2">
+                  <TrashIcon className="h-4 w-4" />
+                  Xóa người dùng
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Bạn có chắc chắn?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Hành động này không thể hoàn tác. Người dùng sẽ bị xóa vĩnh
+                    viễn.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Hủy</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete}>
+                    Xóa
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : user ? (
+          <div className="grid gap-6">
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Thông tin cá nhân</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-6">
+                  <div className="flex items-center gap-4">
+                    <Avatar className="h-20 w-20">
+                      <AvatarImage src={user.avatar} alt={user.fullName} />
+                      <AvatarFallback>
+                        {user.fullName
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="text-xl font-semibold">{user.fullName}</h3>
+                      <p className="text-muted-foreground">{user.email}</p>
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="password" className="text-right">
-                        Mật khẩu
-                      </Label>
-                      <Input
-                        id="password"
-                        type="password"
-                        className="col-span-3"
-                        value={formData.password}
-                        onChange={(e) =>
-                          setFormData({ ...formData, password: e.target.value })
-                        }
-                        placeholder="Để trống nếu không muốn thay đổi"
-                      />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Vai trò</p>
+                      <Badge variant="outline">
+                        {user.tbl_instructors && user.tbl_instructors.length > 0
+                          ? "Giảng viên"
+                          : "Học viên"}
+                      </Badge>
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="fullName" className="text-right">
-                        Họ tên
-                      </Label>
-                      <Input
-                        id="fullName"
-                        className="col-span-3"
-                        value={formData.fullName}
-                        onChange={(e) =>
-                          setFormData({ ...formData, fullName: e.target.value })
-                        }
-                        required
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="role" className="text-right">
-                        Vai trò
-                      </Label>
-                      <Select
-                        value={formData.role}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, role: value })
-                        }
-                        required
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        Trạng thái
+                      </p>
+                      <Badge
+                        variant={user.isEmailVerified ? "default" : "secondary"}
                       >
-                        <SelectTrigger className="col-span-3">
-                          <SelectValue placeholder="Chọn vai trò" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="ADMIN">Admin</SelectItem>
-                          <SelectItem value="INSTRUCTOR">Giảng viên</SelectItem>
-                          <SelectItem value="STUDENT">Học viên</SelectItem>
-                          <SelectItem value="SUPPORT_STAFF">
-                            Nhân viên hỗ trợ
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+                        {user.isEmailVerified ? "Đã xác thực" : "Chưa xác thực"}
+                      </Badge>
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="title" className="text-right">
-                        Tiêu đề
-                      </Label>
-                      <Input
-                        id="title"
-                        className="col-span-3"
-                        value={formData.title}
-                        onChange={(e) =>
-                          setFormData({ ...formData, title: e.target.value })
-                        }
-                      />
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        Ngày tham gia
+                      </p>
+                      <p className="font-medium">
+                        {format(new Date(user.createdAt), "PPP", {
+                          locale: vi,
+                        })}
+                      </p>
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="description" className="text-right">
-                        Mô tả
-                      </Label>
-                      <Input
-                        id="description"
-                        className="col-span-3"
-                        value={formData.description}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            description: e.target.value,
-                          })
-                        }
-                      />
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        Cập nhật lần cuối
+                      </p>
+                      <p className="font-medium">
+                        {format(new Date(user.updatedAt), "PPP", {
+                          locale: vi,
+                        })}
+                      </p>
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="websiteLink" className="text-right">
-                        Website
-                      </Label>
-                      <Input
-                        id="websiteLink"
-                        className="col-span-3"
-                        value={formData.websiteLink}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            websiteLink: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="facebookLink" className="text-right">
-                        Facebook
-                      </Label>
-                      <Input
-                        id="facebookLink"
-                        className="col-span-3"
-                        value={formData.facebookLink}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            facebookLink: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="youtubeLink" className="text-right">
-                        YouTube
-                      </Label>
-                      <Input
-                        id="youtubeLink"
-                        className="col-span-3"
-                        value={formData.youtubeLink}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            youtubeLink: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="linkedinLink" className="text-right">
-                        LinkedIn
-                      </Label>
-                      <Input
-                        id="linkedinLink"
-                        className="col-span-3"
-                        value={formData.linkedinLink}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            linkedinLink: e.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="isEmailVerified" className="text-right">
-                        Xác thực email
-                      </Label>
-                      <div className="col-span-3">
-                        <Select
-                          value={formData.isEmailVerified ? "true" : "false"}
-                          onValueChange={(value) =>
-                            setFormData({
-                              ...formData,
-                              isEmailVerified: value === "true",
-                            })
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Thông tin giảng viên</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-4">
+                  {user.tbl_instructors && user.tbl_instructors.length > 0 ? (
+                    <>
+                      <div className="grid gap-2">
+                        <p className="text-sm text-muted-foreground">
+                          Kinh nghiệm
+                        </p>
+                        <p>{user.tbl_instructors[0].experience}</p>
+                      </div>
+                      <div className="grid gap-2">
+                        <p className="text-sm text-muted-foreground">Tiểu sử</p>
+                        <p>{user.tbl_instructors[0].bio}</p>
+                      </div>
+                      <div className="grid gap-2">
+                        <p className="text-sm text-muted-foreground">
+                          Đánh giá trung bình
+                        </p>
+                        <p className="font-medium">
+                          {user.tbl_instructors[0].average_rating?.d?.[0]?.toFixed(
+                            1
+                          ) || "0"}
+                          /5
+                        </p>
+                      </div>
+                      <div className="grid gap-2">
+                        <p className="text-sm text-muted-foreground">
+                          Trạng thái xác thực
+                        </p>
+                        <Badge
+                          variant={
+                            user.tbl_instructors[0].isVerified
+                              ? "default"
+                              : "secondary"
                           }
                         >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Chọn trạng thái" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="true">Đã xác thực</SelectItem>
-                            <SelectItem value="false">Chưa xác thực</SelectItem>
-                          </SelectContent>
-                        </Select>
+                          {user.tbl_instructors[0].isVerified
+                            ? "Đã xác thực"
+                            : "Chưa xác thực"}
+                        </Badge>
                       </div>
+                      <div className="grid gap-2">
+                        <p className="text-sm text-muted-foreground">
+                          Email PayPal
+                        </p>
+                        <p>{user.tbl_instructors[0].paypalEmail}</p>
+                        <Badge
+                          variant={
+                            user.tbl_instructors[0].isPaypalVerified
+                              ? "default"
+                              : "secondary"
+                          }
+                        >
+                          {user.tbl_instructors[0].isPaypalVerified
+                            ? "Đã xác thực PayPal"
+                            : "Chưa xác thực PayPal"}
+                        </Badge>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center gap-2 py-8">
+                      <UserIcon className="h-8 w-8 text-muted-foreground" />
+                      <p className="text-muted-foreground">
+                        Người dùng này không phải là giảng viên
+                      </p>
                     </div>
-                  </div>
-                  <DialogFooter>
-                    <Button type="submit" onClick={handleUpdate}>
-                      Lưu thay đổi
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive">Xóa</Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Bạn có chắc chắn muốn xóa người dùng này? Hành động này
-                      không thể hoàn tác.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Hủy</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete}>
-                      Xóa
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                  )}
+                </CardContent>
+              </Card>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-4">
-              <Avatar className="h-20 w-20">
-                <AvatarImage src={user.avatar} alt={user.fullName} />
-                <AvatarFallback>{user.fullName?.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <div>
-                <h2 className="text-2xl font-bold">{user.fullName}</h2>
-                <p className="text-gray-500">{user.email}</p>
-                <Badge
-                  variant={user.role === "ADMIN" ? "destructive" : "default"}
-                >
-                  {user.role}
-                </Badge>
-              </div>
-            </div>
-            <div className="mt-4 grid gap-4">
-              <div>
-                <h3 className="font-semibold">Tiêu đề</h3>
-                <p>{user.title || "Chưa có"}</p>
-              </div>
-              <div>
-                <h3 className="font-semibold">Mô tả</h3>
-                <p>{user.description || "Chưa có"}</p>
-              </div>
-              <div>
-                <h3 className="font-semibold">Liên kết</h3>
-                <div className="flex gap-2">
-                  {user.websiteLink && (
-                    <Button variant="outline" size="sm" asChild>
-                      <a
-                        href={user.websiteLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Website
-                      </a>
-                    </Button>
-                  )}
-                  {user.facebookLink && (
-                    <Button variant="outline" size="sm" asChild>
-                      <a
-                        href={user.facebookLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Facebook
-                      </a>
-                    </Button>
-                  )}
-                  {user.youtubeLink && (
-                    <Button variant="outline" size="sm" asChild>
-                      <a
-                        href={user.youtubeLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        YouTube
-                      </a>
-                    </Button>
-                  )}
-                  {user.linkedinLink && (
-                    <Button variant="outline" size="sm" asChild>
-                      <a
-                        href={user.linkedinLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        LinkedIn
-                      </a>
-                    </Button>
-                  )}
-                </div>
-              </div>
-              <div>
-                <h3 className="font-semibold">Trạng thái email</h3>
-                <Badge
-                  variant={user.isEmailVerified ? "default" : "destructive"}
-                >
-                  {user.isEmailVerified ? "Đã xác thực" : "Chưa xác thực"}
-                </Badge>
-              </div>
-              <div>
-                <h3 className="font-semibold">Ngày tạo</h3>
-                <p>{formatDate(user.createdAt)}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        <Tabs defaultValue="courses">
-          <TabsList>
-            <TabsTrigger value="courses">Khóa học đã đăng ký</TabsTrigger>
-            <TabsTrigger value="reviews">Đánh giá</TabsTrigger>
-            <TabsTrigger value="payments">Thanh toán</TabsTrigger>
-          </TabsList>
+            <Tabs defaultValue="courses" className="w-full">
+              <TabsList>
+                <TabsTrigger value="courses">Khóa học</TabsTrigger>
+                <TabsTrigger value="enrollments">Đăng ký</TabsTrigger>
+                <TabsTrigger value="reviews">Đánh giá</TabsTrigger>
+              </TabsList>
 
-          <TabsContent value="courses">
-            <Card>
-              <CardHeader>
-                <CardTitle>Khóa học đã đăng ký</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {!user.tbl_course_enrollments ||
-                user.tbl_course_enrollments.length === 0 ? (
-                  <p>Chưa đăng ký khóa học nào</p>
-                ) : (
-                  <div className="grid gap-4">
-                    {user.tbl_course_enrollments.map((enrollment) => (
-                      <div
-                        key={enrollment.courseEnrollmentId}
-                        className="flex items-center gap-4"
-                      >
-                        <div>
-                          <h4 className="font-semibold">
-                            {enrollment.tbl_courses?.title}
-                          </h4>
-                          <p className="text-sm text-gray-500">
-                            Đăng ký ngày: {formatDate(enrollment.enrolledAt)}
+              <TabsContent value="courses" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Khóa học đã tạo</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {user.tbl_instructors &&
+                      user.tbl_instructors[0]?.tbl_courses &&
+                      user.tbl_instructors[0].tbl_courses.length > 0 ? (
+                        user.tbl_instructors[0].tbl_courses.map(
+                          (course: Course) => (
+                            <div
+                              key={course.courseId}
+                              className="flex items-center justify-between p-4 border rounded-lg"
+                            >
+                              <div className="flex items-center gap-4">
+                                <div className="relative h-16 w-28">
+                                  <img
+                                    src={course.thumbnail || "/placeholder.png"}
+                                    alt={course.title}
+                                    className="rounded-md object-cover w-full h-full"
+                                  />
+                                </div>
+                                <div>
+                                  <h4 className="font-medium">
+                                    {course.title}
+                                  </h4>
+                                  <p className="text-sm text-muted-foreground">
+                                    {course.description || course.overview}
+                                  </p>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <Badge
+                                      variant={
+                                        course.isBestSeller
+                                          ? "default"
+                                          : "secondary"
+                                      }
+                                    >
+                                      {course.isBestSeller
+                                        ? "Bán chạy nhất"
+                                        : "Thông thường"}
+                                    </Badge>
+                                    <Badge
+                                      variant={
+                                        course.isRecommended
+                                          ? "default"
+                                          : "secondary"
+                                      }
+                                    >
+                                      {course.isRecommended
+                                        ? "Đề xuất"
+                                        : "Không đề xuất"}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-4">
+                                <Badge
+                                  variant={
+                                    course.approved === "APPROVED"
+                                      ? "default"
+                                      : course.approved === "REJECTED"
+                                      ? "destructive"
+                                      : "secondary"
+                                  }
+                                >
+                                  {course.approved === "APPROVED"
+                                    ? "Đã phê duyệt"
+                                    : course.approved === "REJECTED"
+                                    ? "Từ chối"
+                                    : "Đang chờ"}
+                                </Badge>
+                                <Button variant="ghost" size="icon" asChild>
+                                  <Link href={`/courses/${course.courseId}`}>
+                                    <EyeIcon className="h-4 w-4" />
+                                  </Link>
+                                </Button>
+                              </div>
+                            </div>
+                          )
+                        )
+                      ) : (
+                        <div className="flex flex-col items-center justify-center gap-2 py-8">
+                          <BookOpenIcon className="h-8 w-8 text-muted-foreground" />
+                          <p className="text-muted-foreground">
+                            Chưa có khóa học nào được tạo
                           </p>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-          <TabsContent value="reviews">
-            <Card>
-              <CardHeader>
-                <CardTitle>Đánh giá khóa học</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {!user.tbl_course_reviews ||
-                user.tbl_course_reviews.length === 0 ? (
-                  <p>Chưa có đánh giá nào</p>
-                ) : (
-                  <div className="grid gap-4">
-                    {user.tbl_course_reviews.map((review) => (
-                      <div
-                        key={review.reviewId}
-                        className="flex items-start gap-4"
-                      >
-                        <div>
-                          <h4 className="font-semibold">
-                            {review.tbl_courses?.title}
-                          </h4>
-                          <div className="flex items-center gap-2">
-                            <Badge>{review.rating} sao</Badge>
-                            <span className="text-sm text-gray-500">
-                              {formatDate(review.createdAt)}
-                            </span>
+              <TabsContent value="enrollments" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Khóa học đã đăng ký</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {user.tbl_course_enrollments &&
+                      user.tbl_course_enrollments.length > 0 ? (
+                        user.tbl_course_enrollments.map((enrollment) => (
+                          <div
+                            key={enrollment.courseEnrollmentId}
+                            className="flex items-center justify-between p-4 border rounded-lg"
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className="relative h-16 w-28">
+                                <img
+                                  src={
+                                    enrollment.tbl_courses.thumbnail ||
+                                    "/placeholder.png"
+                                  }
+                                  alt={enrollment.tbl_courses.title}
+                                  className="rounded-md object-cover w-full h-full"
+                                />
+                              </div>
+                              <div>
+                                <h4 className="font-medium">
+                                  {enrollment.tbl_courses.title}
+                                </h4>
+                                <p className="text-sm text-muted-foreground">
+                                  {enrollment.tbl_courses.description ||
+                                    enrollment.tbl_courses.overview}
+                                </p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Badge
+                                    variant={
+                                      enrollment.tbl_courses.isBestSeller
+                                        ? "default"
+                                        : "secondary"
+                                    }
+                                  >
+                                    {enrollment.tbl_courses.isBestSeller
+                                      ? "Bán chạy nhất"
+                                      : "Thông thường"}
+                                  </Badge>
+                                  <Badge
+                                    variant={
+                                      enrollment.tbl_courses.isRecommended
+                                        ? "default"
+                                        : "secondary"
+                                    }
+                                  >
+                                    {enrollment.tbl_courses.isRecommended
+                                      ? "Đề xuất"
+                                      : "Không đề xuất"}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <p className="text-sm text-muted-foreground">
+                                Đăng ký vào{" "}
+                                {format(
+                                  new Date(enrollment.enrolledAt),
+                                  "PPP",
+                                  {
+                                    locale: vi,
+                                  }
+                                )}
+                              </p>
+                              <Button variant="ghost" size="icon" asChild>
+                                <Link
+                                  href={`/courses/${enrollment.tbl_courses.courseId}`}
+                                >
+                                  <EyeIcon className="h-4 w-4" />
+                                </Link>
+                              </Button>
+                            </div>
                           </div>
-                          <p className="mt-2">{review.comment}</p>
+                        ))
+                      ) : (
+                        <div className="flex flex-col items-center justify-center gap-2 py-8">
+                          <BookOpenIcon className="h-8 w-8 text-muted-foreground" />
+                          <p className="text-muted-foreground">
+                            Chưa đăng ký khóa học nào
+                          </p>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-          <TabsContent value="payments">
-            <Card>
-              <CardHeader>
-                <CardTitle>Lịch sử thanh toán</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {!user.tbl_payment || user.tbl_payment.length === 0 ? (
-                  <p>Chưa có giao dịch nào</p>
-                ) : (
-                  <div className="grid gap-4">
-                    {user.tbl_payment.map((payment) => (
-                      <div
-                        key={payment.paymentId}
-                        className="flex items-center gap-4"
-                      >
-                        <div>
-                          <h4 className="font-semibold">
-                            {payment.paymentMethod} - {payment.amount} VND
-                          </h4>
-                          <div className="flex items-center gap-2">
-                            <Badge
-                              variant={
-                                payment.status === "COMPLETED"
-                                  ? "default"
-                                  : "destructive"
-                              }
-                            >
-                              {payment.status}
-                            </Badge>
-                            <span className="text-sm text-gray-500">
-                              {formatDate(payment.createdAt)}
-                            </span>
+              <TabsContent value="reviews" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Đánh giá đã viết</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-6">
+                      {user.reviews && user.reviews.length > 0 ? (
+                        user.reviews.map((review) => (
+                          <div
+                            key={review.reviewId}
+                            className="flex gap-4 border-b pb-4 last:border-0"
+                          >
+                            <div className="relative h-16 w-28">
+                              <img
+                                src={
+                                  review.course.thumbnail || "/placeholder.png"
+                                }
+                                alt={review.course.title}
+                                className="rounded-md object-cover w-full h-full"
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between mb-2">
+                                <div>
+                                  <h4 className="font-medium">
+                                    {review.course.title}
+                                  </h4>
+                                  <p className="text-sm text-muted-foreground">
+                                    {format(new Date(review.createdAt), "PPP", {
+                                      locale: vi,
+                                    })}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <StarIcon className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                  <span className="font-medium">
+                                    {review.rating.toFixed(1)}
+                                  </span>
+                                </div>
+                              </div>
+                              <p className="text-muted-foreground">
+                                {review.comment}
+                              </p>
+                            </div>
                           </div>
+                        ))
+                      ) : (
+                        <div className="flex flex-col items-center justify-center gap-2 py-8">
+                          <StarIcon className="h-8 w-8 text-muted-foreground" />
+                          <p className="text-muted-foreground">
+                            Chưa có đánh giá nào
+                          </p>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="favorites">
-            <Card>
-              <CardHeader>
-                <CardTitle>Khóa học yêu thích</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {!user.tbl_favorites || user.tbl_favorites.length === 0 ? (
-                  <p>Chưa có khóa học yêu thích nào</p>
-                ) : (
-                  <div className="grid gap-4">
-                    {user.tbl_favorites.map((favorite) => (
-                      <div
-                        key={favorite.favoriteId}
-                        className="flex items-center gap-4"
-                      >
-                        <div>
-                          <h4 className="font-semibold">
-                            {favorite.tbl_courses?.title}
-                          </h4>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="p-8">
+              <div className="flex flex-col items-center justify-center gap-2">
+                <UserIcon className="h-8 w-8 text-muted-foreground" />
+                <p className="text-muted-foreground">
+                  Không tìm thấy thông tin người dùng
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

@@ -33,6 +33,8 @@ import {
   PaginationPrevious,
   PaginationNext,
 } from "@/components/ui/pagination";
+import { PlusIcon, EyeIcon } from "lucide-react";
+import { BookOpenIcon } from "lucide-react";
 
 interface Course {
   courseId: string;
@@ -125,107 +127,207 @@ export default function CoursesPage() {
   };
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Danh sách khóa học</h1>
-        <Button onClick={() => router.push("/courses/create")}>
-          Thêm khóa học
-        </Button>
-      </div>
+    <div className="container mx-auto py-10">
+      <div className="flex flex-col gap-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+              Quản lý khóa học
+            </h1>
+            <p className="text-muted-foreground">
+              Tạo và quản lý các khóa học trên nền tảng
+            </p>
+          </div>
+          <Button
+            onClick={() => router.push("/courses/create")}
+            className="gap-2"
+          >
+            <PlusIcon className="h-4 w-4" />
+            Thêm khóa học
+          </Button>
+        </div>
 
-      {loading ? (
-        <div>Đang tải...</div>
-      ) : courses && courses.length > 0 ? (
-        <div className="grid gap-6">
-          {courses.map((course) => (
-            <Card key={course.courseId}>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>{course.title}</CardTitle>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => router.push(`/courses/${course.courseId}`)}
-                  >
-                    Chi tiết
-                  </Button>
+        <div className="flex flex-col gap-4">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                  <Input
+                    placeholder="Tìm kiếm khóa học..."
+                    value={search}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    className="w-full"
+                  />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4">
-                  <div>
-                    <h3 className="font-semibold">Mô tả</h3>
-                    <p>{course.description}</p>
+                <div className="flex gap-2">
+                  <Select value={sortBy} onValueChange={handleSortByChange}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Sắp xếp theo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={CourseSortBy.CREATED_AT}>
+                        Ngày tạo
+                      </SelectItem>
+                      <SelectItem value={CourseSortBy.TITLE}>
+                        Tên khóa học
+                      </SelectItem>
+                      {/* <SelectItem value={CourseSortBy.PRICE}>Giá</SelectItem> */}
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={sortOrder}
+                    onValueChange={handleSortOrderChange}
+                  >
+                    <SelectTrigger className="w-[120px]">
+                      <SelectValue placeholder="Thứ tự" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={SortOrder.ASC}>Tăng dần</SelectItem>
+                      <SelectItem value={SortOrder.DESC}>Giảm dần</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : courses && courses.length > 0 ? (
+            <div className="grid gap-4">
+              {courses.map((course) => (
+                <Card key={course.courseId} className="overflow-hidden">
+                  <div className="flex flex-col md:flex-row">
+                    <div className="relative w-full md:w-48 h-48">
+                      <img
+                        src={course.thumbnail || "/placeholder.png"}
+                        alt={course.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 p-6">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="text-xl font-semibold mb-2">
+                            {course.title}
+                          </h3>
+                          <p className="text-muted-foreground mb-4 line-clamp-2">
+                            {course.description}
+                          </p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          onClick={() =>
+                            router.push(`/courses/${course.courseId}`)
+                          }
+                          className="gap-2"
+                        >
+                          <EyeIcon className="h-4 w-4" />
+                          Chi tiết
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Giảng viên
+                          </p>
+                          <p className="font-medium">
+                            {course.user?.fullName || "Chưa có"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Danh mục
+                          </p>
+                          <p className="font-medium">
+                            {course.category?.name || "Chưa có"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Giá</p>
+                          <p className="font-medium">
+                            {course.price
+                              ? course.price.toLocaleString("vi-VN") + "đ"
+                              : "Miễn phí"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            Ngày tạo
+                          </p>
+                          <p className="font-medium">
+                            {course.createdAt
+                              ? format(
+                                  new Date(course.createdAt),
+                                  "dd/MM/yyyy",
+                                  {
+                                    locale: vi,
+                                  }
+                                )
+                              : "N/A"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-semibold">Giảng viên</h3>
-                    <p>{course.user?.fullName || "Chưa có"}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Danh mục</h3>
-                    <p>{course.category?.name || "Chưa có"}</p>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Giá</h3>
-                    <p>
-                      {course.price
-                        ? course.price.toLocaleString("vi-VN") + "đ"
-                        : "Miễn phí"}
-                    </p>
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Ngày tạo</h3>
-                    <p>
-                      {course.createdAt &&
-                      !isNaN(new Date(course.createdAt).getTime())
-                        ? format(new Date(course.createdAt), "PPP", {
-                            locale: vi,
-                          })
-                        : "Chưa có"}
-                    </p>
-                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="p-8">
+                <div className="flex flex-col items-center justify-center gap-2">
+                  <BookOpenIcon className="h-8 w-8 text-muted-foreground" />
+                  <p className="text-muted-foreground">
+                    Không tìm thấy khóa học nào
+                  </p>
                 </div>
               </CardContent>
             </Card>
-          ))}
+          )}
         </div>
-      ) : (
-        <div>Không có khóa học nào</div>
-      )}
 
-      {totalPages > 1 && (
-        <div className="flex justify-center mt-6">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  onClick={() => handlePageChange(page - 1)}
-                  className={page === 1 ? "pointer-events-none opacity-50" : ""}
-                />
-              </PaginationItem>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                (pageNumber) => (
-                  <PaginationItem key={pageNumber}>
-                    <PaginationLink
-                      onClick={() => handlePageChange(pageNumber)}
-                      isActive={page === pageNumber}
-                    >
-                      {pageNumber}
-                    </PaginationLink>
-                  </PaginationItem>
-                )
-              )}
-              <PaginationItem>
-                <PaginationNext
-                  onClick={() => handlePageChange(page + 1)}
-                  className={
-                    page === totalPages ? "pointer-events-none opacity-50" : ""
-                  }
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-      )}
+        {totalPages > 1 && (
+          <div className="flex justify-center mt-6">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => handlePageChange(page - 1)}
+                    className={
+                      page === 1 ? "pointer-events-none opacity-50" : ""
+                    }
+                  />
+                </PaginationItem>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (pageNumber) => (
+                    <PaginationItem key={pageNumber}>
+                      <PaginationLink
+                        onClick={() => handlePageChange(pageNumber)}
+                        isActive={page === pageNumber}
+                      >
+                        {pageNumber}
+                      </PaginationLink>
+                    </PaginationItem>
+                  )
+                )}
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => handlePageChange(page + 1)}
+                    className={
+                      page === totalPages
+                        ? "pointer-events-none opacity-50"
+                        : ""
+                    }
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

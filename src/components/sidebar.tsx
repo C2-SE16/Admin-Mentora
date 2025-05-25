@@ -92,7 +92,7 @@ export function Sidebar() {
               ))}
             </nav>
           </div>
-          <div className="border-t p-2">
+          {/* <div className="border-t p-2">
             <nav className="grid gap-1">
               {footerItems.map((item, index) => (
                 <div key={index}>
@@ -154,7 +154,7 @@ export function Sidebar() {
                 </div>
               ))}
             </nav>
-          </div>
+          </div> */}
         </div>
       </div>
     </>
